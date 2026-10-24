@@ -1,4 +1,4 @@
-import { CliRenderEvents, InputRenderable, RGBA, ScrollBoxRenderable, TextAttributes } from "@opentui/core"
+import { CliRenderEvents, InputRenderable, type KeyEvent, RGBA, ScrollBoxRenderable, TextAttributes } from "@opentui/core"
 import { Keymap, type KeymapCommand } from "../context/keymap"
 import { useTheme } from "../context/theme"
 import { entries, filter, flatMap, groupBy, pipe } from "remeda"
@@ -472,6 +472,21 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
   Keymap.createLayer(() => {
     const visible = shownActions()
 
+    const passThroughWhenInputFocused = (run: (input?: string, event?: KeyEvent) => void) => (
+      input?: string,
+      event?: KeyEvent,
+    ) => {
+      if (
+        event &&
+        input &&
+        renderer.currentFocusedEditor === (input as unknown) &&
+        (event.name.length === 1 || event.name === "Backspace" || event.name === "Delete")
+      ) {
+        return false
+      }
+      run(input, event)
+    }
+
     return {
       mode: "modal",
       commands: [
@@ -479,57 +494,49 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
           id: "dialog.select.prev",
           title: "Previous item",
           group: "Dialog",
-          run() {
-            move(-1)
-          },
+          run: passThroughWhenInputFocused(() => move(-1)),
         },
         {
           id: "dialog.select.next",
           title: "Next item",
           group: "Dialog",
-          run() {
-            move(1)
-          },
+          run: passThroughWhenInputFocused(() => move(1)),
         },
         {
           id: "dialog.select.page_up",
           title: "Page up",
           group: "Dialog",
-          run() {
-            move(-10)
-          },
+          run: passThroughWhenInputFocused(() => move(-10)),
         },
         {
           id: "dialog.select.page_down",
           title: "Page down",
           group: "Dialog",
-          run() {
-            move(10)
-          },
+          run: passThroughWhenInputFocused(() => move(10)),
         },
         {
           id: "dialog.select.home",
           title: "First item",
           group: "Dialog",
-          run() {
+          run: passThroughWhenInputFocused(() => {
             if (props.locked) return
             moveTo(0)
-          },
+          }),
         },
         {
           id: "dialog.select.end",
           title: "Last item",
           group: "Dialog",
-          run() {
+          run: passThroughWhenInputFocused(() => {
             if (props.locked) return
             moveTo(flat().length - 1)
-          },
+          }),
         },
         {
           id: "dialog.select.submit",
           title: "Select item",
           group: "Dialog",
-          run: submit,
+          run: passThroughWhenInputFocused(submit),
         },
         ...visible.map((item) => ({
           id: item.command,
