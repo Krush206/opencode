@@ -26,6 +26,7 @@ import { verbosityPreset } from "./verbosity"
 import type {
   LocalReplayRow,
   MiniHost,
+  MiniSettingChange,
   MiniSettings,
   RunInput,
   RunPrompt,
@@ -262,18 +263,19 @@ async function runInteractiveRuntime(input: RunRuntimeInput, deps: RunRuntimeDep
     tuiConfig: tuiConfigTask,
     shell: shellFromConfig,
     onMiniSettingChange: config
-      ? async (change) => {
+      ? async (change: MiniSettingChange) => {
           const info = await config.update((draft) => {
             if (!draft.mini || typeof draft.mini !== "object") draft.mini = {}
-            if (change.key === "verbosity") {
-              Object.assign(draft.mini, verbosityPreset(change.value))
+            const c = change!
+            if (c.key === "verbosity") {
+              Object.assign(draft.mini, verbosityPreset(c.value))
               return
             }
-            if (change.key === "shell") {
-              draft.shell = change.value
+            if (c.key === "shell") {
+              draft.shell = c.value
               return
             }
-            draft.mini[change.key] = change.value
+            draft.mini[c.key] = c.value
           })
           configState.current = resolveMiniSettings({ mini: info.mini, shell: info.shell })
           return configState.current
