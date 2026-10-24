@@ -1,10 +1,12 @@
-import { createMemo, createSignal } from "solid-js"
+import { createMemo, createResource, createSignal } from "solid-js"
 import { useConfig, useNewDesigns } from "../config"
 import { useThemes } from "../context/theme"
 import { useDialog, type DialogContext } from "../ui/dialog"
-import { DialogSelect, DialogSelectChoice } from "../ui/dialog-select"
+import { DialogSelect, DialogSelectChoice, type DialogSelectOption } from "../ui/dialog-select"
 import { useToast } from "../ui/toast"
 import { DialogThemeList } from "./dialog-theme-list"
+import { useClient } from "../context/client"
+import { Suspense } from "solid-js"
 
 type Setting = {
   title: string
@@ -360,6 +362,15 @@ export const settings: Setting[] = [
     keywords: ["selection", "clipboard"],
   },
   {
+    title: "Shell",
+    category: "Terminal",
+    path: ["terminal", "shell"],
+    description: "Shell used for running commands",
+    default: "",
+    open: (dialog) => dialog.replace(() => <DialogShell />),
+    keywords: ["shell", "bash", "zsh", "fish", "terminal"],
+  },
+  {
     title: "Developer tools",
     category: "Debug",
     path: ["debug", "devtools"],
@@ -478,5 +489,77 @@ export function DialogConfig(props: { current?: string }) {
         },
       ]}
     />
+  )
+}
+
+function DialogShell() {
+  const client = useClient()
+  const dialog = useDialog()
+  const toast = useToast()
+
+  const [shells] = createResource(
+    () => true,
+    async () => {
+      try {
+        return await client.api.config.shells()
+      } catch {
+        return []
+      }
+    },
+    { initialValue: [] },
+  )
+
+  const [currentShell] = createResource(
+    () => true,
+    async () => {
+      try {
+        const entries = await client.api.config.get()
+        const doc = entries.find((e) => e.type === "document")
+        return doc?.info.shell ?? ""
+      } catch {
+        return ""
+      }
+    },
+    { initialValue: "" },
+  )
+
+  async function selectShell(option: DialogSelectOption<string>) {
+    try {
+      await client.api.config.update({ shell: option.value || null })
+      dialog.clear()
+    } catch (error) {
+      toast.error(String(error))
+    }
+  }
+
+  const options = createMemo((): DialogSelectOption<string>[] => [
+    { title: "Auto (default)", value: "", description: "Use system default shell" },
+    ...shells.latest.map((s) => ({
+      title: s.name,
+      value: s.path,
+      description: s.path,
+    })),
+  ])
+
+  return (
+    <Suspense fallback={<div>Loading shells...</div>}>
+      <DialogSelect<string>
+        title="Select Shell"
+        searchInTitle
+        titlePlaceholder="Search shells"
+        options={options()}
+        current={currentShell.latest}
+        onSelect={(option) => option && selectShell(option)}
+        footerHints={[{ title: "select", label: "enter" }]}
+        bindings={[
+          {
+            bind: "escape",
+            title: "Cancel",
+            group: "Shell",
+            run: () => dialog.clear(),
+          },
+        ]}
+      />
+    </Suspense>
   )
 }
