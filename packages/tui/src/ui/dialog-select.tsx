@@ -670,11 +670,9 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
       ref={(r) => {
         input = r
         input.traits = { status: "FILTER" }
-        setTimeout(() => {
-          if (!input) return
-          if (r.isDestroyed) return
+        if (!r.isDestroyed) {
           r.focus()
-        }, 1)
+        }
       }}
       placeholder={(searchInTitle() ? props.titlePlaceholder : undefined) ?? props.placeholder ?? "Search"}
       placeholderColor={newDesigns() ? theme.text.faint : theme.text.muted}
