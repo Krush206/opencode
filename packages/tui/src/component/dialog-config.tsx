@@ -364,9 +364,10 @@ export const settings: Setting[] = [
   {
     title: "Shell",
     category: "Terminal",
-    path: ["terminal", "shell"],
+    path: ["shell"],
     description: "Shell used for running commands",
     default: "",
+    format: (value) => (typeof value === "string" && value ? value : "auto"),
     open: (dialog) => dialog.replace(() => <DialogShell />),
     keywords: ["shell", "bash", "zsh", "fish", "terminal"],
   },
@@ -494,6 +495,7 @@ export function DialogConfig(props: { current?: string }) {
 
 function DialogShell() {
   const client = useClient()
+  const config = useConfig()
   const dialog = useDialog()
   const toast = useToast()
 
@@ -511,13 +513,26 @@ function DialogShell() {
     { initialValue: "" },
   )
 
+  function back() {
+    dialog.replace(() => <DialogConfig current="shell" />)
+  }
+
   async function saveEdit(value: string) {
     try {
       await client.api.config.update({ shell: value || null })
-      dialog.clear()
     } catch (error) {
       toast.error(String(error))
+      return
     }
+    try {
+      await config.update((draft) => {
+        if (value) draft.shell = value
+        else delete draft.shell
+      })
+    } catch {
+      // Best-effort local refresh; the server value is already saved.
+    }
+    back()
   }
 
   return (
@@ -526,7 +541,7 @@ function DialogShell() {
       value={currentShell.latest}
       placeholder="Enter shell path"
       onConfirm={saveEdit}
-      onCancel={() => dialog.clear()}
+      onCancel={back}
     />
   )
 }
