@@ -4,6 +4,8 @@ import { useKeyboard, useRenderer, useTerminalDimensions, type JSX } from "@open
 import fuzzysort from "fuzzysort"
 import { createEffect, createMemo, createSignal, type Accessor } from "solid-js"
 import { Keymap } from "../context/keymap"
+import { useDialog } from "../ui/dialog"
+import { DialogPrompt } from "../ui/dialog-prompt"
 import { Config } from "../config"
 import { OneCellSpinner } from "../component/one-cell-spinner"
 import { SEED_MONO, WORK_SPINNERS } from "../ui/one-cell-motion"
@@ -768,6 +770,14 @@ export function RunSettingsBody(props: {
     },
     {
       category: "Terminal",
+      display: "Shell",
+      footer: saving() === "shell" ? "saving" : props.settings().shell,
+      footerTone: saving() === "shell" ? "running" : "selection",
+      keywords: `shell terminal command executor ${props.settings().shell}`,
+      key: "shell",
+    },
+    {
+      category: "Terminal",
       display: "Work spinner",
       icon: (color) => (
         <OneCellSpinner
@@ -789,6 +799,10 @@ export function RunSettingsBody(props: {
   ])
   const change = (item: SettingEntry, direction = 1) => {
     if (saving()) return
+    if (item.key === "shell") {
+      // Shell is handled via dialog on Enter, not left/right
+      return
+    }
     const spinners = Config.MiniWorkSpinner.literals
     const next: MiniSettingChange | undefined =
       item.key === "verbosity"
@@ -810,6 +824,28 @@ export function RunSettingsBody(props: {
       .catch(() => {})
       .finally(() => setSaving())
   }
+  const dialog = useDialog()
+  const handleShellConfirm = (value: string) => {
+    dialog.clear()
+    props.onChange({ key: "shell", value })
+  }
+  const handleShellCancel = () => {
+    dialog.clear()
+  }
+  const openShellDialog = () => {
+    dialog.replace(
+      () => (
+        <DialogPrompt
+          title="Shell"
+          placeholder="Shell path (e.g. /bin/zsh)"
+          value={props.settings().shell}
+          onConfirm={handleShellConfirm}
+          onCancel={handleShellCancel}
+        />
+      ),
+      () => {}
+    )
+  }
   const controller = createSearchablePanelController({
     entries,
     limit: PANEL_LIST_ROWS,
@@ -817,6 +853,11 @@ export function RunSettingsBody(props: {
     onSelect: change,
     onKey(event, item) {
       const name = event.name.toLowerCase()
+      if (name === "enter" && item?.key === "shell") {
+        event.preventDefault()
+        openShellDialog()
+        return true
+      }
       if (name !== "left" && name !== "right") return false
       event.preventDefault()
       if (item) change(item, name === "left" ? -1 : 1)
