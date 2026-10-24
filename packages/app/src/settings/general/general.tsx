@@ -1,4 +1,4 @@
-import { Component, Show, createEffect, createMemo, createResource, createSignal } from "solid-js"
+import { Component, Show, createMemo, createResource, createSignal, createEffect } from "solid-js"
 import { createMediaQuery } from "@solid-primitives/media"
 import { Select } from "@opencode/ui/select"
 import { Switch } from "@opencode/ui/switch"
@@ -72,11 +72,19 @@ const WorkspaceDestinationSetting: Component = () => {
 
 export const ShellSetting: Component<{ controller: ShellSettingsController }> = (props) => {
   const language = useLanguage()
-  const [draft, setDraft] = createSignal(props.controller.current())
+  const [value, setValue] = createSignal<string>("")
+  const [edited, setEdited] = createSignal(false)
 
-  createEffect(() => setDraft(props.controller.current()))
+  createEffect(() => {
+    if (!edited()) setValue(props.controller.current())
+  })
 
-  const commit = () => props.controller.select(draft().trim())
+  const commit = () => {
+    const v = value().trim()
+    if (v === props.controller.current()) return
+    props.controller.select(v)
+    setEdited(false)
+  }
 
   return (
     <SettingsRow
@@ -88,14 +96,17 @@ export const ShellSetting: Component<{ controller: ShellSettingsController }> = 
           data-action="settings-shell"
           type="text"
           appearance="base"
-          value={draft()}
+          value={value()}
           placeholder={language.t("settings.general.row.shell.autoDefault")}
           aria-label={language.t("settings.general.row.shell.title")}
           spellcheck={false}
           autocorrect="off"
           autocomplete="off"
           autocapitalize="off"
-          onInput={(event) => setDraft(event.currentTarget.value)}
+          onInput={(event) => {
+            setEdited(true)
+            setValue(event.currentTarget.value)
+          }}
           onBlur={commit}
           onKeyDown={(event) => {
             if (event.key !== "Enter") return
