@@ -2,6 +2,7 @@ import { createMemo, createResource, createSignal } from "solid-js"
 import { useConfig, useNewDesigns } from "../config"
 import { useThemes } from "../context/theme"
 import { useDialog, type DialogContext } from "../ui/dialog"
+import { DialogPrompt } from "../ui/dialog-prompt"
 import { DialogSelect, DialogSelectChoice, type DialogSelectOption } from "../ui/dialog-select"
 import { useToast } from "../ui/toast"
 import { DialogThemeList } from "./dialog-theme-list"
@@ -522,9 +523,12 @@ function DialogShell() {
     { initialValue: "" },
   )
 
-  async function selectShell(option: DialogSelectOption<string>) {
+  const [editing, setEditing] = createSignal(false)
+  const [editValue, setEditValue] = createSignal("")
+
+  async function saveEdit() {
     try {
-      await client.api.config.update({ shell: option.value || null })
+      await client.api.config.update({ shell: editValue() || null })
       dialog.clear()
     } catch (error) {
       toast.error(String(error))
@@ -540,6 +544,18 @@ function DialogShell() {
     })),
   ])
 
+  if (editing()) {
+    return (
+      <DialogPrompt
+        title="Edit Shell"
+        value={editValue()}
+        placeholder="Enter shell path"
+        onConfirm={saveEdit}
+        onCancel={() => setEditing(false)}
+      />
+    )
+  }
+
   return (
     <DialogSelect<string>
       title="Select Shell"
@@ -547,8 +563,11 @@ function DialogShell() {
       titlePlaceholder="Search shells"
       options={options()}
       current={currentShell.latest}
-      onSelect={(option) => option && selectShell(option)}
-      footerHints={[{ title: "select", label: "enter" }]}
+      onSelect={(option) => {
+        setEditValue(option.value)
+        setEditing(true)
+      }}
+      footerHints={[{ title: "edit", label: "enter" }]}
       bindings={[
         {
           bind: "escape",
