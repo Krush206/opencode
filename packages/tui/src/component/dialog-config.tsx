@@ -470,7 +470,7 @@ export function DialogConfig(props: { current?: string }) {
       onMove={(option) => setSelected(option.value)}
       onSelect={(option) => {
         const open = settings[option.value].open
-        if (newDesigns() && open) return open(dialog)
+        if (open) return open(dialog)
         void change(1, option.value)
       }}
       footerHints={newDesigns() ? [] : [{ title: "change", label: "←/→" }]}
