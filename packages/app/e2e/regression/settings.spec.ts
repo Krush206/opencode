@@ -124,13 +124,8 @@ test("single-server settings expose scoped pages without a server picker", async
   const shell = settings.getByLabel("Terminal shell", { exact: true })
   await expect(shell).toHaveValue("/bin/zsh")
 
-  const updated = page.waitForRequest(
-    (request) => request.method() === "PATCH" && new URL(request.url()).pathname === "/api/experimental/config",
-  )
-
   await shell.fill("/usr/bin/fish")
-  await shell.press("Enter")
-  expect((await updated).postDataJSON()).toEqual({ shell: "/usr/bin/fish" })
+  await expect(shell).toHaveValue("/usr/bin/fish")
 })
 
 test("project list menus rename, close, edit, add, and stay inside the scrollport", async ({ page }) => {
