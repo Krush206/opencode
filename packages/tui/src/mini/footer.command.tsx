@@ -348,7 +348,7 @@ function PanelShell(props: {
           onInput={props.onQuery}
           ref={(input) => {
             props.inputRef(input)
-            input.traits = { status: "FILTER", suspend: true }
+            input.traits = { status: "FILTER" }
             queueMicrotask(() => {
               if (!input.isDestroyed) {
                 input.focus()

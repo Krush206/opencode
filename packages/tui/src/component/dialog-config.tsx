@@ -6,7 +6,6 @@ import { DialogSelect, DialogSelectChoice, type DialogSelectOption } from "../ui
 import { useToast } from "../ui/toast"
 import { DialogThemeList } from "./dialog-theme-list"
 import { useClient } from "../context/client"
-import { Suspense } from "solid-js"
 
 type Setting = {
   title: string
@@ -542,24 +541,22 @@ function DialogShell() {
   ])
 
   return (
-    <Suspense fallback={<div>Loading shells...</div>}>
-      <DialogSelect<string>
-        title="Select Shell"
-        searchInTitle
-        titlePlaceholder="Search shells"
-        options={options()}
-        current={currentShell.latest}
-        onSelect={(option) => option && selectShell(option)}
-        footerHints={[{ title: "select", label: "enter" }]}
-        bindings={[
-          {
-            bind: "escape",
-            title: "Cancel",
-            group: "Shell",
-            run: () => dialog.clear(),
-          },
-        ]}
-      />
-    </Suspense>
+    <DialogSelect<string>
+      title="Select Shell"
+      searchInTitle
+      titlePlaceholder="Search shells"
+      options={options()}
+      current={currentShell.latest}
+      onSelect={(option) => option && selectShell(option)}
+      footerHints={[{ title: "select", label: "enter" }]}
+      bindings={[
+        {
+          bind: "escape",
+          title: "Cancel",
+          group: "Shell",
+          run: () => dialog.clear(),
+        },
+      ]}
+    />
   )
 }

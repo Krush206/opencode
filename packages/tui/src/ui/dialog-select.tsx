@@ -669,7 +669,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
       focusedTextColor={newDesigns() ? theme.text.formfield.base : theme.text.formfield.focused}
       ref={(r) => {
         input = r
-        input.traits = { status: "FILTER", suspend: true }
+        input.traits = { status: "FILTER" }
         setTimeout(() => {
           if (!input) return
           if (r.isDestroyed) return
