@@ -10,7 +10,6 @@
 //   4. runs the prompt queue until the footer closes.
 import { SessionMessage } from "@opencode/schema/session-message"
 import type { LocationRef } from "@opencode/client/promise"
-import type { Config } from "../config"
 import { newSessionLocation } from "../config/new-session-location"
 import { errorMessage } from "../util/error"
 import { loadRunAgents, loadRunCommands, loadRunReferences } from "./catalog.shared"
@@ -62,7 +61,10 @@ type RunRuntimeInput = {
   replayLimit?: number
   demo?: RunInput["demo"]
   tuiConfig?: RunTuiConfig | Promise<RunTuiConfig>
-  config?: Pick<Config.Interface, "update">
+  config?: {
+    get: () => Promise<{ shell?: string }>
+    update: (update: (draft: any) => void) => Promise<any>
+  }
 }
 
 export type RunDeferredInput = {
@@ -81,7 +83,10 @@ export type RunDeferredInput = {
   replayLimit?: number
   demo?: RunInput["demo"]
   tuiConfig?: RunTuiConfig | Promise<RunTuiConfig>
-  config?: Pick<Config.Interface, "update">
+  config?: {
+    get: () => Promise<{ shell?: string }>
+    update: (update: (draft: any) => void) => Promise<any>
+  }
 }
 
 type StreamTransportModule = Pick<
@@ -194,9 +199,14 @@ async function runInteractiveRuntime(input: RunRuntimeInput, deps: RunRuntimeDep
   const start = input.host.startup.now()
   const log = input.host.diagnostics.trace
   const config = input.config
-  const configState: { current: MiniSettings } = { current: resolveMiniSettings() }
+  let shellFromConfig = ""
+  if (config) {
+    const info = await config.get()
+    shellFromConfig = info.shell ?? ""
+  }
+  const configState: { current: MiniSettings } = { current: resolveMiniSettings({ shell: shellFromConfig }) }
   const tuiConfigTask = resolveRunTuiConfig(input.tuiConfig, input.host.platform).then((tuiConfig) => {
-    configState.current = resolveMiniSettings(tuiConfig)
+    configState.current = resolveMiniSettings({ mini: tuiConfig.mini, shell: shellFromConfig })
     return tuiConfig
   })
   const ctx = await input.boot()
@@ -250,6 +260,7 @@ async function runInteractiveRuntime(input: RunRuntimeInput, deps: RunRuntimeDep
     model: state.model,
     variant: state.activeVariant,
     tuiConfig: tuiConfigTask,
+    shell: shellFromConfig,
     onMiniSettingChange: config
       ? async (change) => {
           const info = await config.update((draft) => {
@@ -258,9 +269,13 @@ async function runInteractiveRuntime(input: RunRuntimeInput, deps: RunRuntimeDep
               Object.assign(draft.mini, verbosityPreset(change.value))
               return
             }
+            if (change.key === "shell") {
+              draft.shell = change.value
+              return
+            }
             draft.mini[change.key] = change.value
           })
-          configState.current = resolveMiniSettings(info)
+          configState.current = resolveMiniSettings({ mini: info.mini, shell: info.shell })
           return configState.current
         }
       : undefined,
