@@ -68,8 +68,14 @@ export function verbosityChange(settings: MiniSettings, direction: 1 | -1): Mini
 }
 
 export function applyMiniSettingChange(settings: MiniSettings, change: MiniSettingChange): MiniSettings {
-  if (change.key === "verbosity") return { ...settings, ...verbosityPreset(change.value) }
-  return { ...settings, [change.key]: change.value }
+  const c = change!
+  const key = c.key
+  if (key === "verbosity") {
+    const value = c.value as MiniVerbosity
+    return { ...settings, ...verbosityPreset(value) }
+  }
+  const value = c.value
+  return { ...settings, [key]: value }
 }
 
 function nearestMiniVerbosity(settings: MiniSettings) {
