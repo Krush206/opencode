@@ -653,7 +653,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
 
   const searchInTitle = () => newDesigns() && props.searchInTitle === true && props.renderFilter !== false
 
-  const searchInput = createMemo(() => (
+  const searchInput = (
     <input
       flexGrow={1}
       onInput={(e) => {
@@ -670,16 +670,16 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
       ref={(r) => {
         input = r
         input.traits = { status: "FILTER", suspend: true }
-        queueMicrotask(() => {
+        setTimeout(() => {
           if (!input) return
           if (r.isDestroyed) return
           r.focus()
-        })
+        }, 1)
       }}
       placeholder={(searchInTitle() ? props.titlePlaceholder : undefined) ?? props.placeholder ?? "Search"}
       placeholderColor={newDesigns() ? theme.text.faint : theme.text.muted}
     />
-  ))
+  )
 
   return (
     <DialogLayout
@@ -698,12 +698,12 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
                   onClose={props.onCancel}
                 />
                 <Show when={props.renderFilter !== false}>
-                  <box paddingTop={1}>{searchInput()}</box>
+                  <box paddingTop={1}>{searchInput}</box>
                 </Show>
               </>
             }
           >
-            <DialogHeader titleView={searchInput()} gap={2} onClose={props.onCancel} />
+            <DialogHeader titleView={searchInput} gap={2} onClose={props.onCancel} />
           </Show>
         </box>
       }
