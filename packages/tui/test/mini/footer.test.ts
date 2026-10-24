@@ -272,9 +272,12 @@ test.each([false, true])("monochrome toggles live without replacing the footer (
   const app = await setup({
     mono,
     theme: { name: "system" },
-    update: async (change) => {
+    update: async (change: MiniSettingChange) => {
       changes.push(change)
-      return { ...resolveMiniSettings(), [change.key]: change.value }
+      const c = change!
+      const key = c.key
+      const value = c.value
+      return { ...resolveMiniSettings(), [key]: value }
     },
   })
   app.renderer.getPalette = async () => {
