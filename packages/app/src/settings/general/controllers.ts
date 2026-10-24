@@ -45,10 +45,12 @@ export function createServerShellController(server: Accessor<ServerConnection.An
     { initialValue: { shell: undefined } },
   )
 
+  const current = createMemo(() => state.latest.shell ?? "")
+
   return {
-    current: () => state.latest.shell ?? "",
+    current,
     select: (value: string) => {
-      if (value === (state.latest.shell ?? "")) return
+      if (value === current()) return
       const previous = state.latest
       actions.mutate({ ...previous, shell: value || undefined })
       void serverCtx()
