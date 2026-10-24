@@ -20,9 +20,7 @@ import { useServerCtx } from "@/runtime/server/runtime"
 import { useLanguage } from "@/runtime/i18n/language"
 import { showToast } from "@/shell/notifications/toast"
 
-export { createShellOptions, createSoundPreviewController } from "./behavior"
-
-export type { ShellOption, ShellSelectOption } from "./behavior"
+export { createSoundPreviewController } from "./behavior"
 
 export function createServerShellController(server: Accessor<ServerConnection.Any>) {
   const language = useLanguage()
@@ -33,27 +31,21 @@ export function createServerShellController(server: Accessor<ServerConnection.An
     source,
     async () => {
       const context = serverCtx()
-
-      const [entries, shells] = await Promise.all([
-        context.sdk.api.config.get().catch(() => []),
-        context.sdk.api.config.shells().catch(() => []),
-      ])
+      const entries = await context.sdk.api.config.get().catch(() => [])
 
       const boundary = entries.findIndex((entry) => entry.type === "directory")
       const global = boundary === -1 ? entries : entries.slice(0, boundary)
 
       return {
-        shells,
         shell: global
           .flatMap((entry) => (entry.type === "document" && entry.info.shell !== undefined ? [entry.info.shell] : []))
           .at(-1),
       }
     },
-    { initialValue: { shells: [], shell: undefined } },
+    { initialValue: { shell: undefined } },
   )
 
   return {
-    shells: () => state.latest.shells,
     current: () => state.latest.shell ?? "",
     select: (value: string) => {
       if (value === (state.latest.shell ?? "")) return
