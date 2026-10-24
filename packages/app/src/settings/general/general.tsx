@@ -6,6 +6,7 @@ import { TimelineDetailControl } from "@/settings/timeline-detail"
 import { useLanguage } from "@/runtime/i18n/language"
 import { usePlatform } from "@/runtime/platform/platform"
 import { ExtensionSettingsSections } from "@/runtime/extension/settings-page-view"
+import { ServerConnection } from "@/runtime/server/registry"
 import {
   type FollowUpBehavior,
   type TerminalPlacement,
@@ -15,7 +16,7 @@ import {
 import { formatKeybind } from "@/shell/commands/command"
 import { SettingsList } from "@/settings/list"
 import { SettingsRow } from "@/settings/row"
-import { createShellOptions, type ShellSettingsController } from "./controllers"
+import { createServerShellController, createShellOptions, type ShellSettingsController } from "./controllers"
 import "@/settings/settings.css"
 
 const tabLayoutOptions: ("horizontal" | "vertical")[] = ["horizontal", "vertical"]
@@ -217,7 +218,7 @@ const TabLayoutSetting = () => {
   )
 }
 
-export const SettingsGeneral: Component = () => {
+export const SettingsGeneral: Component<{ server?: ServerConnection.Any }> = (props) => {
   const language = useLanguage()
   const platform = usePlatform()
   const settings = useSettings()
@@ -237,6 +238,10 @@ export const SettingsGeneral: Component = () => {
     if (!update) return
     void update.catch(() => setPinchZoom(!checked))
   }
+
+  const shellController = props.server
+    ? createServerShellController(() => props.server!)
+    : undefined
 
   const GeneralSection = () => (
     <div class="settings-section">
@@ -272,6 +277,10 @@ export const SettingsGeneral: Component = () => {
               <Switch checked={pinchZoom.latest} onChange={onPinchZoomChange} />
             </div>
           </SettingsRow>
+        </Show>
+
+        <Show when={!!shellController}>
+          <ShellSetting controller={shellController!} />
         </Show>
 
         <ExtensionSettingsSections page="general" section="general" />
