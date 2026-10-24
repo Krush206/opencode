@@ -3,7 +3,7 @@ import { useConfig, useNewDesigns } from "../config"
 import { useThemes } from "../context/theme"
 import { useDialog, type DialogContext } from "../ui/dialog"
 import { DialogPrompt } from "../ui/dialog-prompt"
-import { DialogSelect, DialogSelectChoice, type DialogSelectOption } from "../ui/dialog-select"
+import { DialogSelect, DialogSelectChoice } from "../ui/dialog-select"
 import { useToast } from "../ui/toast"
 import { DialogThemeList } from "./dialog-theme-list"
 import { useClient } from "../context/client"
@@ -497,18 +497,6 @@ function DialogShell() {
   const dialog = useDialog()
   const toast = useToast()
 
-  const [shells] = createResource(
-    () => true,
-    async () => {
-      try {
-        return await client.api.config.shells()
-      } catch {
-        return []
-      }
-    },
-    { initialValue: [] },
-  )
-
   const [currentShell] = createResource(
     () => true,
     async () => {
@@ -523,59 +511,22 @@ function DialogShell() {
     { initialValue: "" },
   )
 
-  const [editing, setEditing] = createSignal(false)
-  const [editValue, setEditValue] = createSignal("")
-
-  async function saveEdit() {
+  async function saveEdit(value: string) {
     try {
-      await client.api.config.update({ shell: editValue() || null })
+      await client.api.config.update({ shell: value || null })
       dialog.clear()
     } catch (error) {
       toast.error(String(error))
     }
   }
 
-  const options = createMemo((): DialogSelectOption<string>[] => [
-    { title: "Auto (default)", value: "", description: "Use system default shell" },
-    ...shells.latest.map((s) => ({
-      title: s.name,
-      value: s.path,
-      description: s.path,
-    })),
-  ])
-
-  if (editing()) {
-    return (
-      <DialogPrompt
-        title="Edit Shell"
-        value={editValue()}
-        placeholder="Enter shell path"
-        onConfirm={saveEdit}
-        onCancel={() => setEditing(false)}
-      />
-    )
-  }
-
   return (
-    <DialogSelect<string>
-      title="Select Shell"
-      searchInTitle
-      titlePlaceholder="Search shells"
-      options={options()}
-      current={currentShell.latest}
-      onSelect={(option) => {
-        setEditValue(option.value)
-        setEditing(true)
-      }}
-      footerHints={[{ title: "edit", label: "enter" }]}
-      bindings={[
-        {
-          bind: "escape",
-          title: "Cancel",
-          group: "Shell",
-          run: () => dialog.clear(),
-        },
-      ]}
+    <DialogPrompt
+      title="Edit Shell"
+      value={currentShell.latest}
+      placeholder="Enter shell path"
+      onConfirm={saveEdit}
+      onCancel={() => dialog.clear()}
     />
   )
 }
