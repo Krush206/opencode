@@ -39,6 +39,7 @@ export default Runtime.handler(Commands.commands.mini, (input) =>
         demo: input.demo,
         tuiConfig: resolved,
         config: {
+          get: () => runServicePromise(config.get()),
           update: (update) => runServicePromise(config.update(update)),
         },
         paths: { home: global.home, state: global.state, log: global.log },
