@@ -1,4 +1,4 @@
-import { createMemo, createResource, createSignal } from "solid-js"
+import { createMemo, createResource, createSignal, Show } from "solid-js"
 import { useConfig, useNewDesigns } from "../config"
 import { useThemes } from "../context/theme"
 import { useDialog, type DialogContext } from "../ui/dialog"
@@ -499,22 +499,42 @@ function DialogShell() {
   const dialog = useDialog()
   const toast = useToast()
 
-  const [currentShell] = createResource(
+  // The edited shell lives in the highest-priority global config document, before the
+  // first directory scope, mirroring the web settings row.
+  const shellFrom = (entries: Awaited<ReturnType<typeof client.api.config.get>>) => {
+    const boundary = entries.findIndex((entry) => entry.type === "directory")
+    const global = boundary === -1 ? entries : entries.slice(0, boundary)
+    return (
+      global
+        .flatMap((entry) => (entry.type === "document" && entry.info.shell !== undefined ? [entry.info.shell] : []))
+        .at(-1) ?? ""
+    )
+  }
+
+  const [entries] = createResource(
     () => true,
     async () => {
       try {
-        const entries = await client.api.config.get()
-        const doc = entries.find((e) => e.type === "document")
-        return doc?.info.shell ?? ""
+        return await client.api.config.get()
       } catch {
-        return ""
+        return []
       }
     },
-    { initialValue: "" },
   )
 
   function back() {
     dialog.replace(() => <DialogConfig current="shell" />)
+  }
+
+  // The server reloads config after the patch, so wait for the saved value to be visible
+  // before returning: reopening the dialog reads this endpoint.
+  async function settle(value: string) {
+    const deadline = Date.now() + 2_000
+    let visible: string | undefined
+    while (visible !== value && Date.now() < deadline) {
+      visible = await client.api.config.get().then(shellFrom, () => undefined)
+      if (visible !== value) await new Promise((resolve) => setTimeout(resolve, 100))
+    }
   }
 
   async function saveEdit(value: string) {
@@ -529,19 +549,29 @@ function DialogShell() {
         if (value) draft.shell = value
         else delete draft.shell
       })
-    } catch {
-      // Best-effort local refresh; the server value is already saved.
+    } catch (error) {
+      toast.error(String(error))
     }
+    await settle(value)
     back()
   }
 
   return (
-    <DialogPrompt
-      title="Edit Shell"
-      value={currentShell.latest}
-      placeholder="Enter shell path"
-      onConfirm={saveEdit}
-      onCancel={back}
-    />
+    <Show
+      when={entries()}
+      fallback={
+        <DialogPrompt title="Edit Shell" placeholder="Enter shell path" busy busyText="Loading…" onCancel={back} />
+      }
+    >
+      {(loaded) => (
+        <DialogPrompt
+          title="Edit Shell"
+          value={shellFrom(loaded())}
+          placeholder="Enter shell path"
+          onConfirm={saveEdit}
+          onCancel={back}
+        />
+      )}
+    </Show>
   )
 }
