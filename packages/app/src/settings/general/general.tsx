@@ -1,13 +1,11 @@
-import { Component, Show, createMemo, createResource, createSignal, createEffect } from "solid-js"
+import { Component, Show, createMemo, createResource } from "solid-js"
 import { createMediaQuery } from "@solid-primitives/media"
 import { Select } from "@opencode/ui/select"
 import { Switch } from "@opencode/ui/switch"
-import { TextInput } from "@opencode/ui/text-input"
 import { TimelineDetailControl } from "@/settings/timeline-detail"
 import { useLanguage } from "@/runtime/i18n/language"
 import { usePlatform } from "@/runtime/platform/platform"
 import { ExtensionSettingsSections } from "@/runtime/extension/settings-page-view"
-import { ServerConnection } from "@/runtime/server/registry"
 import {
   type FollowUpBehavior,
   type TerminalPlacement,
@@ -17,7 +15,7 @@ import {
 import { formatKeybind } from "@/shell/commands/command"
 import { SettingsList } from "@/settings/list"
 import { SettingsRow } from "@/settings/row"
-import { createServerShellController, type ShellSettingsController } from "./controllers"
+import { createShellOptions, type ShellSettingsController } from "./controllers"
 import "@/settings/settings.css"
 
 const tabLayoutOptions: ("horizontal" | "vertical")[] = ["horizontal", "vertical"]
@@ -72,49 +70,35 @@ const WorkspaceDestinationSetting: Component = () => {
 
 export const ShellSetting: Component<{ controller: ShellSettingsController }> = (props) => {
   const language = useLanguage()
-  const [value, setValue] = createSignal<string>("")
-  const [edited, setEdited] = createSignal(false)
 
-  createEffect(() => {
-    if (!edited()) setValue(props.controller.current())
-  })
-
-  const commit = () => {
-    const v = value().trim()
-    if (v === props.controller.current()) return
-    props.controller.select(v)
-    setEdited(false)
-  }
+  const options = createMemo(() =>
+    createShellOptions({
+      shells: props.controller.shells(),
+      current: props.controller.current(),
+    }),
+  )
 
   return (
     <SettingsRow
       title={language.t("settings.general.row.shell.title")}
       description={language.t("settings.general.row.shell.description")}
     >
-      <div class="w-full sm:w-[220px]">
-        <TextInput
-          data-action="settings-shell"
-          type="text"
-          appearance="base"
-          value={value()}
-          placeholder={language.t("settings.general.row.shell.autoDefault")}
-          aria-label={language.t("settings.general.row.shell.title")}
-          spellcheck={false}
-          autocorrect="off"
-          autocomplete="off"
-          autocapitalize="off"
-          onInput={(event) => {
-            setEdited(true)
-            setValue(event.currentTarget.value)
-          }}
-          onBlur={commit}
-          onKeyDown={(event) => {
-            if (event.key !== "Enter") return
-            event.preventDefault()
-            commit()
-          }}
-        />
-      </div>
+      <Select
+        data-action="settings-shell"
+        options={options()}
+        current={options().find((option) => option.value === props.controller.current()) ?? options()[0]}
+        placement="bottom-end"
+        gutter={6}
+        value={(option) => option.id}
+        label={(option) => {
+          if (option.id === "auto") return language.t("settings.general.row.shell.autoDefault")
+
+          if (!option.terminalOnly) return option.name
+
+          return `${option.name} (${language.t("settings.general.row.shell.terminalOnly")})`
+        }}
+        onSelect={(option) => option && props.controller.select(option.value)}
+      />
     </SettingsRow>
   )
 }
@@ -233,7 +217,7 @@ const TabLayoutSetting = () => {
   )
 }
 
-export const SettingsGeneral: Component<{ server?: ServerConnection.Any }> = (props) => {
+export const SettingsGeneral: Component = () => {
   const language = useLanguage()
   const platform = usePlatform()
   const settings = useSettings()
@@ -253,10 +237,6 @@ export const SettingsGeneral: Component<{ server?: ServerConnection.Any }> = (pr
     if (!update) return
     void update.catch(() => setPinchZoom(!checked))
   }
-
-  const shellController = props.server
-    ? createServerShellController(() => props.server!)
-    : undefined
 
   const GeneralSection = () => (
     <div class="settings-section">
@@ -292,10 +272,6 @@ export const SettingsGeneral: Component<{ server?: ServerConnection.Any }> = (pr
               <Switch checked={pinchZoom.latest} onChange={onPinchZoomChange} />
             </div>
           </SettingsRow>
-        </Show>
-
-        <Show when={!!shellController}>
-          <ShellSetting controller={shellController!} />
         </Show>
 
         <ExtensionSettingsSections page="general" section="general" />
