@@ -28,6 +28,10 @@ function open(page: Page, input: Partial<WorkspaceInput> = {}) {
       { type: "document", path: "/home/test/.config/opencode/opencode.jsonc", info: { shell: "/bin/zsh" } },
       { type: "directory", path: "/home/test/.config/opencode" },
     ],
+    shells: [
+      { path: "/bin/zsh", name: "zsh", acceptable: true },
+      { path: "/bin/bash", name: "bash", acceptable: true },
+    ],
     sessions: sandboxes.map((item, index) => ({
       id: `ses_settings_${index + 1}`,
       title: `Workspace ${index + 1} session`,
@@ -120,12 +124,14 @@ test("single-server settings expose scoped pages without a server picker", async
 
   await settings.getByRole("tab", { name: "Server", exact: true }).click()
   await expect(settings.getByText("Terminal shell", { exact: true })).toBeVisible()
+  await settings.getByText("zsh", { exact: true }).click()
 
-  const shell = settings.getByLabel("Terminal shell", { exact: true })
-  await expect(shell).toHaveValue("/bin/zsh")
+  const updated = page.waitForRequest(
+    (request) => request.method() === "PATCH" && new URL(request.url()).pathname === "/api/experimental/config",
+  )
 
-  await shell.fill("/usr/bin/fish")
-  await expect(shell).toHaveValue("/usr/bin/fish")
+  await page.getByRole("option", { name: "bash", exact: true }).click()
+  expect((await updated).postDataJSON()).toEqual({ shell: "bash" })
 })
 
 test("project list menus rename, close, edit, add, and stay inside the scrollport", async ({ page }) => {
