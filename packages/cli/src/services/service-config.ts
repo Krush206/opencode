@@ -309,6 +309,7 @@ export const set = Effect.fn("cli.service-config.set")(function* (key: string, v
       return
     }
     case "shell": {
+      yield* Service.stop(yield* options())
       yield* write({ ...(yield* read()), shell: value || undefined })
       // Also update server config if service is running
       const endpoint = yield* discover().pipe(Effect.orElseSucceed(() => undefined))
