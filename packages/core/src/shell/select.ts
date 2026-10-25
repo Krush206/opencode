@@ -14,6 +14,7 @@ const META: Record<string, { deny?: boolean; login?: boolean; ps?: boolean }> = 
   bash: { login: true },
   dash: { login: true },
   fish: { deny: true, login: true },
+  gst: {},
   ksh: { login: true },
   nu: { deny: true },
   powershell: { ps: true },
@@ -165,6 +166,7 @@ export function args(file: string, command: string) {
   const n = name(file)
   if (n === "cmd") return ["/c", command]
   if (ps(file)) return ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", command]
+  if (n === "gst") return ["-e", command]
   return ["-c", command]
 }
 
