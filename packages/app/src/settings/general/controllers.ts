@@ -20,7 +20,9 @@ import { useServerCtx } from "@/runtime/server/runtime"
 import { useLanguage } from "@/runtime/i18n/language"
 import { showToast } from "@/shell/notifications/toast"
 
-export { createSoundPreviewController } from "./behavior"
+export { createShellOptions, createSoundPreviewController } from "./behavior"
+
+export type { ShellOption, ShellSelectOption } from "./behavior"
 
 export function createServerShellController(server: Accessor<ServerConnection.Any>) {
   const language = useLanguage()
@@ -31,26 +33,30 @@ export function createServerShellController(server: Accessor<ServerConnection.An
     source,
     async () => {
       const context = serverCtx()
-      const entries = await context.sdk.api.config.get().catch(() => [])
+
+      const [entries, shells] = await Promise.all([
+        context.sdk.api.config.get().catch(() => []),
+        context.sdk.api.config.shells().catch(() => []),
+      ])
 
       const boundary = entries.findIndex((entry) => entry.type === "directory")
       const global = boundary === -1 ? entries : entries.slice(0, boundary)
 
       return {
+        shells,
         shell: global
           .flatMap((entry) => (entry.type === "document" && entry.info.shell !== undefined ? [entry.info.shell] : []))
           .at(-1),
       }
     },
-    { initialValue: { shell: undefined } },
+    { initialValue: { shells: [], shell: undefined } },
   )
 
-  const current = createMemo(() => state.latest.shell ?? "")
-
   return {
-    current,
+    shells: () => state.latest.shells,
+    current: () => state.latest.shell ?? "",
     select: (value: string) => {
-      if (value === current()) return
+      if (value === (state.latest.shell ?? "")) return
       const previous = state.latest
       actions.mutate({ ...previous, shell: value || undefined })
       void serverCtx()
