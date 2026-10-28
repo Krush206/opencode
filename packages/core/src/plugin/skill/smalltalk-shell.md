@@ -141,3 +141,65 @@ Full alphabetical index is available in the manual. Common prefixes:
 * `SystemExceptions.*` – error hierarchy
 * `VFS.*` – virtual file system
 * `Weak*` – weak collection variants
+
+## Base Library Reference `gst-base.html`
+
+The official base library reference at https://www.gnu.org/software/smalltalk/manual-base/gst-base.html documents the complete Smalltalk base class library distributed with GNU Smalltalk.
+
+### Core object model
+
+* **Object**, **UndefinedObject**, **Behavior**, **Class**, **Metaclass**, **ClassDescription**
+* **Namespace**, **AbstractNamespace**, **SystemDictionary**, **RootNamespace**
+* **Package**, **PackageLoader**, **Autoload**
+
+### Collections
+
+* **Collection**, **SequenceableCollection**, **ArrayedCollection**, **Array**, **OrderedCollection**, **LinkedList**, **Bag**, **Set**, **SortedCollection**, **Dictionary**, **IdentityDictionary**, **Weak*` variants
+* **Interval**, **LargeArray**, **LargeArrayedCollection**, **ByteArray**, **WordArray**, **String**, **UnicodeString**, **Symbol**, **Character**, **CharacterArray**
+
+### Streams & I/O
+
+* **Stream**, **PositionableStream**, **ReadStream**, **WriteStream**, **ReadWriteStream**, **FileStream**, **FileDescriptor**, **File**, **FilePath**, **FileSegment**
+* **VFS.*** – Virtual File System: `VFS.FileWrapper`, `VFS.ArchiveFile`, `VFS.ZipFile`, `VFS.ArchiveMember`, etc.
+
+### Blocks & control
+
+* **BlockClosure**, **BlockContext**, **CompiledBlock**, **CompiledCode**, **CompiledMethod**, **MethodDictionary**, **MethodContext**, **ContextPart**, **Continuation**
+* **Generator**, **Promise**, **DeferredVariableBinding**
+
+### Process & concurrency
+
+* **Process**, **CallinProcess**, **ProcessorScheduler**, **Semaphore**, **RecursionLock**, **SharedQueue**, **Promise**
+
+### Numbers & math
+
+* **Number**, **Magnitude**, **Integer**, **SmallInteger**, **LargeInteger**, **LargePositiveInteger**, **LargeNegativeInteger**, **LargeZeroInteger**, **Float**, **FloatD**, **FloatE**, **FloatQ**, **Fraction**, **ScaledDecimal**, **Random**
+
+### Time & dates
+
+* **Time**, **Date**, **DateTime**, **Duration**
+
+### Geometry
+
+* **Point**, **Rectangle**
+
+### Exceptions
+
+* **Exception**, **Error**, **Notification**, **Warning**, **Halt**
+* **ArithmeticError**, **ZeroDivide**, **MessageNotUnderstood**
+* **SystemExceptions.*** – `ArgumentOutOfRange`, `IndexOutOfRange`, `InvalidArgument`, `FileError`, `ReadOnlyObject`, `SecurityError`, etc.
+
+### Files & OS
+
+* **FileDescriptor** – `popen: dir:` for external commands
+* **Getopt**, **ProcessEnvironment**, **DLD**
+
+### Text & regex
+
+* **TextCollector**, **UnicodeCharacter**, **UnicodeString**, **Regex**, **RegexResults**
+
+### C interface
+
+* **CObject**, **CArray**, **CPtr**, **CString**, **CStruct**, **CUnion**, **CType`, `CCallable`, `CFunctionDescriptor`, etc.
+
+Use the Class index and Method index in the manual for selector lookup. When in doubt, prefer `FileDescriptor popen:` to launch POSIX tools from Smalltalk, and use collections + BlockClosure for data processing instead of shell pipelines.
