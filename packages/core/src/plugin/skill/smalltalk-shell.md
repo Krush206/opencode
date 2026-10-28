@@ -111,3 +111,33 @@ s contents displayNl
 ## When to use this skill
 
 Use when the user has configured `opencode service set shell gst` and the shell tool description says `Commands run on ... using gst`. Prefer Smalltalk idioms and `FileDescriptor popen:` for external tools.
+
+## Reference
+
+Official GNU Smalltalk class index: https://www.gnu.org/software/smalltalk/manual-base/html_node/Class-index.html
+
+### Frequently used classes
+
+* **Collection / ArrayedCollection / OrderedCollection** – basic collections
+* **Array** – fixed size indexed collection
+* **Dictionary / IdentityDictionary** – key/value maps
+* **Set / Bag** – unique / multiset collections
+* **String / UnicodeString** – text, immutable by default
+* **ByteArray / WordArray** – binary data
+* **BlockClosure** – closures, `[:arg | ...]`
+* **FileDescriptor** – `popen:` for external processes
+* **FileStream / ReadStream / WriteStream / PositionableStream** – I/O
+* **Point / Rectangle** – geometry
+* **Time / Date / DateTime / Duration** – time
+* **Process / ProcessorScheduler / Semaphore** – concurrency
+* **Exception / Error / ZeroDivide** – error handling
+* **Class / Behavior / Metaclass** – meta-object protocol
+* **SystemDictionary / Namespace** – global namespace
+* **Regex / RegexResults** – pattern matching
+
+Full alphabetical index is available in the manual. Common prefixes:
+
+* `C*` – C interface classes
+* `SystemExceptions.*` – error hierarchy
+* `VFS.*` – virtual file system
+* `Weak*` – weak collection variants
