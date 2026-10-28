@@ -11,14 +11,18 @@ import { Config } from "../config.js"
 import os from "os"
 import opencodeContent from "./skill/opencode.md" with { type: "text" }
 import reportContent from "./skill/report.md" with { type: "text" }
+import smalltalkContent from "./skill/smalltalk-shell.md" with { type: "text" }
 
 export const OpencodeContent = opencodeContent
 export const ReportContent = reportContent
+export const SmalltalkContent = smalltalkContent
 
 export const OpencodeDescription =
   "Use this skill for any question about OpenCode itself, including how OpenCode works, using or configuring it, migrating from V1 to V2, troubleshooting it, developing plugins or integrations, using the OpenCode SDK, clients, server, or API, and contributing to the OpenCode codebase. Also use it for OpenCode agents, commands, skills, tools, permissions, MCP servers, providers, models, themes, keybinds, formatters, the CLI, TUI, desktop app, and web app."
 const REPORT_DESCRIPTION =
   "Use when the user wants to report an opencode issue or bug. Collect standard diagnostics, add user-specific reproduction context, and publish the issue with GitHub CLI."
+const SMALLTALK_DESCRIPTION =
+  "Use when the OpenCode shell is GNU Smalltalk gst. Provides Smalltalk syntax, idioms, and FileDescriptor popen usage for executing POSIX commands from Smalltalk."
 
 export const Plugin = define({
   id: "opencode.skill",
@@ -41,6 +45,15 @@ export const Plugin = define({
           description: REPORT_DESCRIPTION,
           path: AbsolutePath.make("/builtin/report.md"),
           content: reportContent,
+        }),
+      )
+      editor.add(
+        Skill.Info.make({
+          id: Skill.ID.make("smalltalk-shell"),
+          name: Skill.Name.make("GNU Smalltalk Shell"),
+          description: SMALLTALK_DESCRIPTION,
+          path: AbsolutePath.make("/builtin/smalltalk-shell.md"),
+          content: SmalltalkContent,
         }),
       )
     })
