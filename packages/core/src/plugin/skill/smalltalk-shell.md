@@ -7,7 +7,7 @@ Use this skill when the OpenCode shell is GNU Smalltalk `gst`. The shell tool ex
 * The shell is Smalltalk, not bash. No `ls`, `cd`, `grep`, `|`, `>`, `&&`, `$VAR`.
 * Every shell command is a valid Smalltalk expression evaluated by `gst -e`.
 * Working directory is set via the tool's `workdir` parameter, not `cd`.
-* For external POSIX programs, use Smalltalk's `FileDescriptor popen:`.
+* For external POSIX programs, use kernel `ShellUtility` classes.
 
 ## Basic syntax
 
@@ -87,30 +87,29 @@ result printNl
 
 ## External processes
 
-Use Smalltalk to launch POSIX commands:
+Use kernel `ShellUtility` to launch POSIX commands:
 
 ```smalltalk
-| s |
-s := FileDescriptor popen: 'ls' dir: 'r'.
-s contents displayNl
+ShellUtility run: 'echo Hello from GST'
+ShellUtility runLines: 'printf "a\nb\nc"'
+ShellUtility runStatus: 'true'
 ```
 
-```smalltalk
-| s |
-s := FileDescriptor popen: 'echo Hello from GST' dir: 'r'.
-s contents displayNl
-```
+Kernel utilities:
+
+* `ShellUtility run: aCommand`, `runLines:`, `runStatus:` – wrapper around `Smalltalk system:`
+* `ShellCommand` – builder for command strings with arguments, `asString`, `run`
 
 ## Common mistakes
 
-* Do not write `ls -la`. Use `FileDescriptor popen: 'ls -la' dir: 'r'` or inspect files via Smalltalk APIs.
+* Do not write `ls -la`. Use `ShellUtility run: 'ls -la'` or inspect files via Smalltalk APIs.
 * Strings are immutable by default. Use `copy` before `at:put:`.
 * No `cd`. Set `workdir` in the shell tool input.
 * No pipes/redirection. Use Smalltalk collections and blocks instead.
 
 ## When to use this skill
 
-Use when the user has configured `opencode service set shell gst` and the shell tool description says `Commands run on ... using gst`. Prefer Smalltalk idioms and `FileDescriptor popen:` for external tools.
+Use when the user has configured `opencode service set shell gst` and the shell tool description says `Commands run on ... using gst`. Prefer Smalltalk idioms and `ShellUtility` for external tools.
 
 ## Reference
 
@@ -134,6 +133,8 @@ Official GNU Smalltalk class index: https://www.gnu.org/software/smalltalk/manua
 * **Class / Behavior / Metaclass** – meta-object protocol
 * **SystemDictionary / Namespace** – global namespace
 * **Regex / RegexResults** – pattern matching
+* **ShellUtility / ShellCommand** – shell command execution utilities, `ShellUtility run:`, `runLines:`, `runStatus:`, builder `ShellCommand`
+* **LLMMessage / LLMChatHistory / LLMPromptBuilder / LLMTokenizer** – LLM helper classes added to kernel: message objects, chat history, prompt builder with `Character cr asString`, and simple tokenizer
 
 Full alphabetical index is available in the manual. Common prefixes:
 
@@ -194,6 +195,13 @@ The official base library reference at https://www.gnu.org/software/smalltalk/ma
 * **FileDescriptor** – `popen: dir:` for external commands
 * **Getopt**, **ProcessEnvironment**, **DLD**
 
+### LLM utilities
+
+* **LLMMessage** – role/content message object with `asString`
+* **LLMChatHistory** – ordered collection of `LLMMessage`, `addUser:`, `addAssistant:`, `prompt`
+* **LLMPromptBuilder** – builder with `system:`, `user:`, `addHistory:`, `build` using `Character cr asString`
+* **LLMTokenizer** – simple whitespace tokenizer, `tokenize:`, `count:`
+
 ### Text & regex
 
 * **TextCollector**, **UnicodeCharacter**, **UnicodeString**, **Regex**, **RegexResults**
@@ -202,4 +210,4 @@ The official base library reference at https://www.gnu.org/software/smalltalk/ma
 
 * **CObject**, **CArray**, **CPtr**, **CString**, **CStruct**, **CUnion**, **CType`, `CCallable`, `CFunctionDescriptor`, etc.
 
-Use the Class index and Method index in the manual for selector lookup. When in doubt, prefer `FileDescriptor popen:` to launch POSIX tools from Smalltalk, and use collections + BlockClosure for data processing instead of shell pipelines.
+Use the Class index and Method index in the manual for selector lookup. When in doubt, prefer `ShellUtility` to launch POSIX tools from Smalltalk, and use collections + BlockClosure for data processing instead of shell pipelines.
