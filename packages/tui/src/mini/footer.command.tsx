@@ -768,14 +768,6 @@ export function RunSettingsBody(props: {
     },
     {
       category: "Terminal",
-      display: "Shell",
-      footer: props.settings().shell,
-      footerTone: "selection",
-      keywords: `shell terminal command executor ${props.settings().shell}`,
-      key: "shell",
-    },
-    {
-      category: "Terminal",
       display: "Work spinner",
       icon: (color) => (
         <OneCellSpinner
@@ -797,10 +789,6 @@ export function RunSettingsBody(props: {
   ])
   const change = (item: SettingEntry, direction = 1) => {
     if (saving()) return
-    if (item.key === "shell") {
-      // Display-only here; the shell is edited from full TUI settings or the CLI.
-      return
-    }
     const spinners = Config.MiniWorkSpinner.literals
     const next: MiniSettingChange | undefined =
       item.key === "verbosity"
