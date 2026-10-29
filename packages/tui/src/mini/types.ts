@@ -417,7 +417,6 @@ export type MiniSettings = {
   footer: "show" | "hide"
   splash: "show" | "hide"
   work_spinner: Config.MiniWorkSpinner
-  shell?: string
   mono: boolean
 }
 
