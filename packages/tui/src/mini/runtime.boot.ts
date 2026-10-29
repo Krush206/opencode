@@ -84,7 +84,7 @@ export async function resolveRunTuiConfig(
     .catch(() => defaultRunTuiConfig(platform))
 }
 
-export function resolveMiniSettings(config?: { mini?: Partial<MiniSettings>; shell?: string }): MiniSettings {
+export function resolveMiniSettings(config?: { mini?: Partial<MiniSettings> }): MiniSettings {
   return {
     thinking: config?.mini?.thinking ?? "show",
     tools: config?.mini?.tools ?? "hide",
@@ -93,7 +93,6 @@ export function resolveMiniSettings(config?: { mini?: Partial<MiniSettings>; she
     footer: config?.mini?.footer ?? "show",
     splash: config?.mini?.splash ?? "show",
     work_spinner: config?.mini?.work_spinner ?? "block-soft-slide",
-    shell: config?.shell ?? "",
     mono: config?.mini?.mono ?? false,
   }
 }
