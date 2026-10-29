@@ -6,7 +6,6 @@ import { Context, Effect, FileSystem, Layer, Option, Schema } from "effect"
 import { produce, type Draft } from "immer"
 import { applyEdits, modify, parse, type ParseError } from "jsonc-parser"
 import path from "path"
-import { ServiceConfig } from "../services/service-config"
 import { ConfigMigration } from "./migrate"
 import { Info, normalizeLegacyTabs, SchemaURL } from "./schema"
 
@@ -105,13 +104,6 @@ export const layer = Layer.effect(
           const config = Option.getOrUndefined(decode(parse(updated, errors, { allowTrailingComma: true })))
           if (errors.length || config === undefined) return yield* Effect.fail(new Error("Invalid CLI config update"))
           yield* write(updated.endsWith("\n") ? updated : updated + "\n")
-          // The service config and the running service keep their own copy of the shell
-          // setting, so a CLI-side edit reaches `service get`, mini, and agent tools alike.
-          if (current.shell !== next.shell)
-            yield* ServiceConfig.set("shell", next.shell ?? "").pipe(
-              Effect.provideService(FileSystem.FileSystem, fs),
-              Effect.provideService(Global.Service, global),
-            )
           return merge(config, content)
         }),
       ).pipe(Effect.mapError((cause) => new Error("Failed to update CLI config", { cause }))),
