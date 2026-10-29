@@ -1,229 +1,189 @@
-# GNU Smalltalk Shell Skill
+# GNU Smalltalk Shell
 
-Use this skill when the OpenCode shell is GNU Smalltalk `gst`. The shell tool executes `gst -e '<Smalltalk expression>'`. Do NOT use POSIX bash syntax.
+When the shell is `gst`, the shell tool runs `gst -e '<Smalltalk code>'`. Every command must be valid Smalltalk. POSIX syntax (`ls`, `cd`, `grep`, `|`, `>`, `&&`, `$VAR`) does not work.
 
 ## Activation
 
-When this skill is invoked, ensure the service shell is set to GNU Smalltalk the same way as `opencode service set shell`:
+Run these while the **current** shell is still POSIX:
 
 ```bash
-opencode service set shell "$(command -v gst)"
+GST="$(command -v gst)" && [ -n "$GST" ] && opencode service set shell "$GST"
 ```
 
-The service command will write the shell preference to the service config and, if the service is running, update the server config via `client.config.update({ shell: ... })`. After activation, confirm with:
+If `gst` is not found, stop and tell the user to install GNU Smalltalk. Do not set an empty shell.
 
-```bash
-opencode service get shell
+Then verify **using Smalltalk**, because the shell has already changed:
+
+```smalltalk
+ShellUtility run: 'opencode service get shell'
 ```
 
-Only proceed with Smalltalk commands once the shell is confirmed as `gst`.
+Proceed only if the output is the path to `gst`. If the tool still behaves like POSIX, the new config may apply on the next tool call; retry once before reporting a failure. To go back, use the `default-shell` skill.
 
 ## Core rules
 
-* The shell is Smalltalk, not bash. No `ls`, `cd`, `grep`, `|`, `>`, `&&`, `$VAR`.
-* Every shell command is a valid Smalltalk expression evaluated by `gst -e`.
-* Working directory is set via the tool's `workdir` parameter, not `cd`.
-* For external POSIX programs, use kernel `ShellUtility` classes.
+* Set the working directory with the tool's `workdir` parameter. There is no `cd`.
+* Do not guess class or selector names. The installed gst version and any custom kernel additions determine what exists, so check with the "Discovering classes and selectors" section below before using something unfamiliar, and after any `doesNotUnderstand` or "undeclared variable" error.
+* Always print results explicitly (`printNl` / `displayNl`). Do not rely on `gst -e` echoing the last expression.
+* `displayNl` shows strings without quotes; `printNl` shows the Smalltalk literal form. Use `displayNl` for human-readable output.
+* Statements are separated by `.`; temporaries are declared with `| a b |`.
+* Smalltalk strings use single quotes; embed one by doubling it (`'it''s'`). Use `Character cr` / `Character nl asString` for line breaks, since `\n` is not an escape.
+* No pipes or redirection. Use collections, blocks and streams.
+* Errors print a trace and execution continues with the next statement. Use `Smalltalk quit: 1` after a failure if a nonzero exit status matters.
+* Strings from literals may be read-only; call `copy` before `at:put:`.
 
-## Basic syntax
+## Quick reference
 
 ```smalltalk
-'Hello, world!' displayNl
-| x | x := 42. x printNl
-10 + 20
+'Hello' displayNl.
+(3 + 4) printNl.
+((1 to: 10) collect: [:n | n squared]) printNl.
+((1 to: 10) select: [:n | n odd]) printNl.
+((1 to: 100) inject: 0 into: [:sum :n | sum + n]) printNl.
 ```
 
-## Variables and blocks
+Control flow:
 
 ```smalltalk
-| a b |
-a := 10. b := 20.
-(a + b) printNl
-```
-
-```smalltalk
-(1 to: 10) collect: [:n | n squared]  "=> (1 4 9 16 25 36 49 64 81 100 )"
-(1 to: 10) select: [:n | n odd]       "=> (1 3 5 7 9 )"
-(1 to: 100) inject: 0 into: [:sum :n | sum + n]  "=> 5050"
-```
-
-## Control flow
-
-```smalltalk
-| x |
+| x i sum |
 x := 42.
-(x > 40) ifTrue: ['big' printNl] ifFalse: ['small' printNl]
-
-| i sum |
+(x > 40) ifTrue: ['big' displayNl] ifFalse: ['small' displayNl].
 i := 1. sum := 0.
 [i <= 5] whileTrue: [sum := sum + i. i := i + 1].
-sum printNl
+sum printNl.
 ```
 
-## Objects
+Collections:
 
 ```smalltalk
-| p |
-p := Point x: 3 y: 4.
-(p x) printNl
-(p y) printNl
+| d |
+d := Dictionary new.
+d at: #foo put: 'bar'.
+(d at: #foo ifAbsent: ['none']) displayNl.
 ```
+
+Exceptions (note `ZeroDivide`, not `ZeroDivisionError`):
 
 ```smalltalk
-| dict |
-dict := Dictionary new.
-dict at: #foo put: 'bar'.
-dict at: #baz put: 42.
-(dict at: #foo) printNl
+([1 / 0] on: ZeroDivide do: [:e | e messageText displayNl. -1]) printNl.
+[nil foo] on: MessageNotUnderstood do: [:e | e return: 0].
 ```
 
-Mutable strings:
-```smalltalk
-| s |
-s := 'mutable' copy.
-s at: 1 put: $M.
-s printNl
-```
+## Files and processes
 
-## Time
+If one of these selectors fails, look it up with the snippets in "Discovering classes and selectors" below:
 
 ```smalltalk
-| time |
-time := Time now.
-(time hour) printNl
+(File name: 'notes.txt') exists printNl.
+(File name: 'notes.txt') contents displayNl.
+Directory working displayNl.
 ```
 
-## Exception handling
+Run external programs:
 
 ```smalltalk
-| result |
-result := [1 / 0] on: ZeroDivisionError do: [:ex | 'division by zero' ].
-result printNl
+Smalltalk system: 'ls -la'.                       "output goes to stdout; returns exit status"
+(Smalltalk system: 'test -f Makefile') printNl.
 ```
 
-## External processes
-
-Use kernel `ShellUtility` to launch POSIX commands:
+If the environment provides the custom `ShellUtility` / `ShellCommand` classes, prefer them for running POSIX commands:
 
 ```smalltalk
-ShellUtility run: 'echo Hello from GST'
-ShellUtility runLines: 'printf "a\nb\nc"'
-ShellUtility runStatus: 'true'
+ShellUtility run: 'echo Hello from GST'.
+ShellUtility runLines: 'printf "a\nb\nc"'.
+ShellUtility runStatus: 'true'.
 ```
 
-Kernel utilities:
+Check availability first: `(Smalltalk includesKey: #ShellUtility) printNl`. If it prints `false`, use `Smalltalk system:` or `FileDescriptor popen:dir:` instead. Likewise, the `LLM*` helper classes are not part of stock gst.
 
-* `ShellUtility run: aCommand`, `runLines:`, `runStatus:` – wrapper around `Smalltalk system:`
-* `ShellCommand` – builder for command strings with arguments, `asString`, `run`
+## Discovering classes and selectors
+
+gst is a live image, so the running system can answer "what exists?" directly. Use these snippets instead of relying on memory or the class lists in this file. Edit only the first assignment(s) of each snippet (marked `"<- edit"`).
+
+Output can be large. Filter first, and cap long lists with `first: (n min: x size)`.
+
+If quoting breaks because the tool wraps the code in a POSIX shell, save the snippet to a file in the working directory and run `FileStream fileIn: 'discover.st'`.
+
+**1. Environment: version and custom additions**
+
+```smalltalk
+Smalltalk version displayNl.
+#(#ShellUtility #ShellCommand #LLMMessage #LLMChatHistory #LLMPromptBuilder #LLMTokenizer) do: [:n |
+    (n , ': ' , (Smalltalk includesKey: n) printString) displayNl].
+```
+
+**2. List classes, optionally filtered by a name fragment**
+
+```smalltalk
+| filter names |
+filter := 'Stream'.    "<- edit; use '' for every class"
+names := Set new.
+Object withAllSubclasses do: [:c |
+    (filter isEmpty or: [(c printString indexOfSubCollection: filter) > 0])
+        ifTrue: [names add: c printString]].
+names asSortedCollection do: [:n | n displayNl].
+```
+
+Classes in namespaces print with their prefix (for example `SystemExceptions.InvalidValue`) and can be referenced that way directly.
+
+**3. Describe one class: comment, hierarchy, selectors**
+
+```smalltalk
+| cls sels |
+cls := OrderedCollection.    "<- edit; namespaced classes work too, e.g. SystemExceptions.InvalidValue"
+sels := [:c | c selectors isNil
+    ifTrue: [#()]
+    ifFalse: [c selectors asSortedCollection asArray]].
+('Class: ' , cls printString) displayNl.
+('Category: ' , cls category displayString) displayNl.
+('Comment: ' , cls comment displayString) displayNl.
+('Superclasses: ' , cls allSuperclasses printString) displayNl.
+('Instance variables: ' , cls allInstVarNames printString) displayNl.
+'--- instance-side selectors defined here ---' displayNl.
+(sels value: cls) do: [:s | s displayNl].
+'--- class-side selectors defined here ---' displayNl.
+(sels value: cls class) do: [:s | s displayNl].
+```
+
+To include inherited selectors, replace `sels value: cls` with `cls allSelectors asSortedCollection`.
+
+**4. Search selectors across all classes by name fragment**
+
+```smalltalk
+| frag hits |
+frag := 'addFirst';    "<- edit"
+hits := Set new.
+Object withAllSubclasses do: [:c |
+    c selectors isNil ifFalse: [
+        c selectors do: [:s |
+            (s indexOfSubCollection: frag) > 0
+                ifTrue: [hits add: c printString , '>>' , s]]]].
+hits asSortedCollection do: [:h | h displayNl].
+```
+
+**5. Quick checks and source lookup**
+
+```smalltalk
+(OrderedCollection canUnderstand: #addFirst:) printNl.          "does the class understand it?"
+(3 respondsTo: #printString:) printNl.                          "does this object respond to it?"
+(OrderedCollection whichClassIncludesSelector: #do:) printNl.   "which class in the chain defines it?"
+(Object withAllSubclasses select: [:c | c includesSelector: #do:]) printNl.   "all implementors"
+(OrderedCollection >> #addFirst:) methodSourceString displayNl. "read the source"
+(OrderedCollection >> #addFirst:) methodCategory displayNl.
+```
+
+**Workflow:** (1) run snippet 1 once per session; (2) find the class with snippet 2; (3) list its selectors with snippet 3, or search by fragment with snippet 4; (4) confirm with `canUnderstand:` before calling, and read the source with `>>` when behavior is unclear. If a selector shown here is absent from the output, trust the output: the installed version differs.
 
 ## Common mistakes
 
-* Do not write `ls -la`. Use `ShellUtility run: 'ls -la'` or inspect files via Smalltalk APIs.
-* Strings are immutable by default. Use `copy` before `at:put:`.
-* No `cd`. Set `workdir` in the shell tool input.
-* No pipes/redirection. Use Smalltalk collections and blocks instead.
-
-## When to use this skill
-
-Use when the user has configured `opencode service set shell gst` and the shell tool description says `Commands run on ... using gst`. Prefer Smalltalk idioms and `ShellUtility` for external tools.
+* `ls -la` → `Smalltalk system: 'ls -la'` (or `ShellUtility run:`).
+* `ZeroDivisionError` → `ZeroDivide`.
+* Forgetting `printNl` / `displayNl` and seeing no output.
+* Using `cd` instead of `workdir`.
 
 ## Reference
 
-Official GNU Smalltalk class index: https://www.gnu.org/software/smalltalk/manual-base/html_node/Class-index.html
+* Class index: https://www.gnu.org/software/smalltalk/manual-base/html_node/Class-index.html
+* Base library: https://www.gnu.org/software/smalltalk/manual-base/gst-base.html
 
-### Frequently used classes
-
-* **Collection / ArrayedCollection / OrderedCollection** – basic collections
-* **Array** – fixed size indexed collection
-* **Dictionary / IdentityDictionary** – key/value maps
-* **Set / Bag** – unique / multiset collections
-* **String / UnicodeString** – text, immutable by default
-* **ByteArray / WordArray** – binary data
-* **BlockClosure** – closures, `[:arg | ...]`
-* **FileDescriptor** – `popen:` for external processes
-* **FileStream / ReadStream / WriteStream / PositionableStream** – I/O
-* **Point / Rectangle** – geometry
-* **Time / Date / DateTime / Duration** – time
-* **Process / ProcessorScheduler / Semaphore** – concurrency
-* **Exception / Error / ZeroDivide** – error handling
-* **Class / Behavior / Metaclass** – meta-object protocol
-* **SystemDictionary / Namespace** – global namespace
-* **Regex / RegexResults** – pattern matching
-* **ShellUtility / ShellCommand** – shell command execution utilities, `ShellUtility run:`, `runLines:`, `runStatus:`, builder `ShellCommand`
-* **LLMMessage / LLMChatHistory / LLMPromptBuilder / LLMTokenizer** – LLM helper classes added to kernel: message objects, chat history, prompt builder with `Character cr asString`, and simple tokenizer
-
-Full alphabetical index is available in the manual. Common prefixes:
-
-* `C*` – C interface classes
-* `SystemExceptions.*` – error hierarchy
-* `VFS.*` – virtual file system
-* `Weak*` – weak collection variants
-
-## Base Library Reference `gst-base.html`
-
-The official base library reference at https://www.gnu.org/software/smalltalk/manual-base/gst-base.html documents the complete Smalltalk base class library distributed with GNU Smalltalk.
-
-### Core object model
-
-* **Object**, **UndefinedObject**, **Behavior**, **Class**, **Metaclass**, **ClassDescription**
-* **Namespace**, **AbstractNamespace**, **SystemDictionary**, **RootNamespace**
-* **Package**, **PackageLoader**, **Autoload**
-
-### Collections
-
-* **Collection**, **SequenceableCollection**, **ArrayedCollection**, **Array**, **OrderedCollection**, **LinkedList**, **Bag**, **Set**, **SortedCollection**, **Dictionary**, **IdentityDictionary**, **Weak*` variants
-* **Interval**, **LargeArray**, **LargeArrayedCollection**, **ByteArray**, **WordArray**, **String**, **UnicodeString**, **Symbol**, **Character**, **CharacterArray**
-
-### Streams & I/O
-
-* **Stream**, **PositionableStream**, **ReadStream**, **WriteStream**, **ReadWriteStream**, **FileStream**, **FileDescriptor**, **File**, **FilePath**, **FileSegment**
-* **VFS.*** – Virtual File System: `VFS.FileWrapper`, `VFS.ArchiveFile`, `VFS.ZipFile`, `VFS.ArchiveMember`, etc.
-
-### Blocks & control
-
-* **BlockClosure**, **BlockContext**, **CompiledBlock**, **CompiledCode**, **CompiledMethod**, **MethodDictionary**, **MethodContext**, **ContextPart**, **Continuation**
-* **Generator**, **Promise**, **DeferredVariableBinding**
-
-### Process & concurrency
-
-* **Process**, **CallinProcess**, **ProcessorScheduler**, **Semaphore**, **RecursionLock**, **SharedQueue**, **Promise**
-
-### Numbers & math
-
-* **Number**, **Magnitude**, **Integer**, **SmallInteger**, **LargeInteger**, **LargePositiveInteger**, **LargeNegativeInteger**, **LargeZeroInteger**, **Float**, **FloatD**, **FloatE**, **FloatQ**, **Fraction**, **ScaledDecimal**, **Random**
-
-### Time & dates
-
-* **Time**, **Date**, **DateTime**, **Duration**
-
-### Geometry
-
-* **Point**, **Rectangle**
-
-### Exceptions
-
-* **Exception**, **Error**, **Notification**, **Warning**, **Halt**
-* **ArithmeticError**, **ZeroDivide**, **MessageNotUnderstood**
-* **SystemExceptions.*** – `ArgumentOutOfRange`, `IndexOutOfRange`, `InvalidArgument`, `FileError`, `ReadOnlyObject`, `SecurityError`, etc.
-
-### Files & OS
-
-* **FileDescriptor** – `popen: dir:` for external commands
-* **Getopt**, **ProcessEnvironment**, **DLD**
-
-### LLM utilities
-
-* **LLMMessage** – role/content message object with `asString`
-* **LLMChatHistory** – ordered collection of `LLMMessage`, `addUser:`, `addAssistant:`, `prompt`
-* **LLMPromptBuilder** – builder with `system:`, `user:`, `addHistory:`, `build` using `Character cr asString`
-* **LLMTokenizer** – simple whitespace tokenizer, `tokenize:`, `count:`
-
-### Text & regex
-
-* **TextCollector**, **UnicodeCharacter**, **UnicodeString**, **Regex**, **RegexResults**
-
-### C interface
-
-* **CObject**, **CArray**, **CPtr**, **CString**, **CStruct**, **CUnion**, **CType`, `CCallable`, `CFunctionDescriptor`, etc.
-
-Use the Class index and Method index in the manual for selector lookup. When in doubt, prefer `ShellUtility` to launch POSIX tools from Smalltalk, and use collections + BlockClosure for data processing instead of shell pipelines.
+Useful classes: `Collection`, `OrderedCollection`, `Dictionary`, `Set`, `Bag`, `String`, `Symbol`, `Interval`, `ReadStream`, `WriteStream`, `FileStream`, `File`, `Directory`, `FileDescriptor`, `Date`, `Time`, `DateTime`, `Duration`, `Regex`, `Error`, `ZeroDivide`, `SystemExceptions.*`, `Process`, `Semaphore`.
