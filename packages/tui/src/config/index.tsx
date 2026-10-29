@@ -253,7 +253,6 @@ export const Info = Schema.Struct({
   }),
   mouse: Schema.optional(Schema.Boolean).annotate({ description: "Enable terminal mouse capture" }),
   cursor: Schema.optional(Cursor),
-  shell: Schema.optional(Schema.String).annotate({ description: "Shell used for running commands" }),
 })
 export type Info = Schema.Schema.Type<typeof Info>
 
