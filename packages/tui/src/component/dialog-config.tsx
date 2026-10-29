@@ -1,12 +1,10 @@
-import { createMemo, createResource, createSignal, Show } from "solid-js"
+import { createMemo, createSignal } from "solid-js"
 import { useConfig, useNewDesigns } from "../config"
 import { useThemes } from "../context/theme"
 import { useDialog, type DialogContext } from "../ui/dialog"
-import { DialogPrompt } from "../ui/dialog-prompt"
 import { DialogSelect, DialogSelectChoice } from "../ui/dialog-select"
 import { useToast } from "../ui/toast"
 import { DialogThemeList } from "./dialog-theme-list"
-import { useClient } from "../context/client"
 
 type Setting = {
   title: string
@@ -362,16 +360,6 @@ export const settings: Setting[] = [
     keywords: ["selection", "clipboard"],
   },
   {
-    title: "Shell",
-    category: "Terminal",
-    path: ["shell"],
-    description: "Shell used for running commands",
-    default: "",
-    format: (value) => (typeof value === "string" && value ? value : "auto"),
-    open: (dialog) => dialog.replace(() => <DialogShell />),
-    keywords: ["shell", "bash", "zsh", "fish", "terminal"],
-  },
-  {
     title: "Developer tools",
     category: "Debug",
     path: ["debug", "devtools"],
@@ -471,7 +459,7 @@ export function DialogConfig(props: { current?: string }) {
       onMove={(option) => setSelected(option.value)}
       onSelect={(option) => {
         const open = settings[option.value].open
-        if (open) return open(dialog)
+        if (newDesigns() && open) return open(dialog)
         void change(1, option.value)
       }}
       footerHints={newDesigns() ? [] : [{ title: "change", label: "←/→" }]}
@@ -490,88 +478,5 @@ export function DialogConfig(props: { current?: string }) {
         },
       ]}
     />
-  )
-}
-
-function DialogShell() {
-  const client = useClient()
-  const config = useConfig()
-  const dialog = useDialog()
-  const toast = useToast()
-
-  // The edited shell lives in the highest-priority global config document, before the
-  // first directory scope, mirroring the web settings row.
-  const shellFrom = (entries: Awaited<ReturnType<typeof client.api.config.get>>) => {
-    const boundary = entries.findIndex((entry) => entry.type === "directory")
-    const global = boundary === -1 ? entries : entries.slice(0, boundary)
-    return (
-      global
-        .flatMap((entry) => (entry.type === "document" && entry.info.shell !== undefined ? [entry.info.shell] : []))
-        .at(-1) ?? ""
-    )
-  }
-
-  const [entries] = createResource(
-    () => true,
-    async () => {
-      try {
-        return await client.api.config.get()
-      } catch {
-        return []
-      }
-    },
-  )
-
-  function back() {
-    dialog.replace(() => <DialogConfig current="shell" />)
-  }
-
-  // The server reloads config after the patch, so wait for the saved value to be visible
-  // before returning: reopening the dialog reads this endpoint.
-  async function settle(value: string) {
-    const deadline = Date.now() + 2_000
-    let visible: string | undefined
-    while (visible !== value && Date.now() < deadline) {
-      visible = await client.api.config.get().then(shellFrom, () => undefined)
-      if (visible !== value) await new Promise((resolve) => setTimeout(resolve, 100))
-    }
-  }
-
-  async function saveEdit(value: string) {
-    try {
-      await client.api.config.update({ shell: value || null })
-    } catch (error) {
-      toast.error(String(error))
-      return
-    }
-    try {
-      await config.update((draft) => {
-        if (value) draft.shell = value
-        else delete draft.shell
-      })
-    } catch (error) {
-      toast.error(String(error))
-    }
-    await settle(value)
-    back()
-  }
-
-  return (
-    <Show
-      when={entries()}
-      fallback={
-        <DialogPrompt title="Edit Shell" placeholder="Enter shell path" busy busyText="Loading…" onCancel={back} />
-      }
-    >
-      {(loaded) => (
-        <DialogPrompt
-          title="Edit Shell"
-          value={shellFrom(loaded())}
-          placeholder="Enter shell path"
-          onConfirm={saveEdit}
-          onCancel={back}
-        />
-      )}
-    </Show>
   )
 }
