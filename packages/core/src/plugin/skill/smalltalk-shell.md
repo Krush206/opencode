@@ -2,6 +2,22 @@
 
 Use this skill when the OpenCode shell is GNU Smalltalk `gst`. The shell tool executes `gst -e '<Smalltalk expression>'`. Do NOT use POSIX bash syntax.
 
+## Activation
+
+When this skill is invoked, ensure the service shell is set to GNU Smalltalk the same way as `opencode service set shell`:
+
+```bash
+opencode service set shell "$(command -v gst)"
+```
+
+The service command will write the shell preference to the service config and, if the service is running, update the server config via `client.config.update({ shell: ... })`. After activation, confirm with:
+
+```bash
+opencode service get shell
+```
+
+Only proceed with Smalltalk commands once the shell is confirmed as `gst`.
+
 ## Core rules
 
 * The shell is Smalltalk, not bash. No `ls`, `cd`, `grep`, `|`, `>`, `&&`, `$VAR`.
