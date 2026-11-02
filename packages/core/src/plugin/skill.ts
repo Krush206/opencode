@@ -13,11 +13,13 @@ import opencodeContent from "./skill/opencode.md" with { type: "text" }
 import reportContent from "./skill/report.md" with { type: "text" }
 import smalltalkContent from "./skill/smalltalk-shell.md" with { type: "text" }
 import defaultShellContent from "./skill/default-shell.md" with { type: "text" }
+import smalltalkReferenceContent from "./skill/smalltalk-reference.md" with { type: "text" }
 
 export const OpencodeContent = opencodeContent
 export const ReportContent = reportContent
 export const SmalltalkContent = smalltalkContent
 export const DefaultShellContent = defaultShellContent
+export const SmalltalkReferenceContent = smalltalkReferenceContent
 
 export const OpencodeDescription =
   "Use this skill for any question about OpenCode itself, including how OpenCode works, using or configuring it, migrating from V1 to V2, troubleshooting it, developing plugins or integrations, using the OpenCode SDK, clients, server, or API, and contributing to the OpenCode codebase. Also use it for OpenCode agents, commands, skills, tools, permissions, MCP servers, providers, models, themes, keybinds, formatters, the CLI, TUI, desktop app, and web app."
@@ -25,6 +27,8 @@ const REPORT_DESCRIPTION =
   "Use when the user wants to report an opencode issue or bug. Collect standard diagnostics, add user-specific reproduction context, and publish the issue with GitHub CLI."
 const SMALLTALK_DESCRIPTION =
   "Switch the shell tool to GNU Smalltalk gst. Use Smalltalk expressions with ShellUtility for external commands."
+const SMALLTALK_REFERENCE_DESCRIPTION =
+  "Complete GNU Smalltalk Base Library reference with all classes, methods, and cross-references."
 const DEFAULT_SHELL_DESCRIPTION =
   "Restore the default POSIX shell for the shell tool via opencode service unset shell."
 
@@ -67,6 +71,15 @@ export const Plugin = define({
           description: DEFAULT_SHELL_DESCRIPTION,
           path: AbsolutePath.make("/builtin/default-shell.md"),
           content: DefaultShellContent,
+        }),
+      )
+      editor.add(
+        Skill.Info.make({
+          id: Skill.ID.make("smalltalk-reference"),
+          name: Skill.Name.make("GNU Smalltalk Reference"),
+          description: SMALLTALK_REFERENCE_DESCRIPTION,
+          path: AbsolutePath.make("/builtin/smalltalk-reference.md"),
+          content: SmalltalkReferenceContent,
         }),
       )
     })
