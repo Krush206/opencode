@@ -24,9 +24,9 @@ export const OpencodeDescription =
 const REPORT_DESCRIPTION =
   "Use when the user wants to report an opencode issue or bug. Collect standard diagnostics, add user-specific reproduction context, and publish the issue with GitHub CLI."
 const SMALLTALK_DESCRIPTION =
-  "Use when the OpenCode shell is GNU Smalltalk gst. Provides Smalltalk syntax, idioms, and FileDescriptor popen usage for executing POSIX commands from Smalltalk."
+  "Switch the shell tool to GNU Smalltalk gst. Use Smalltalk expressions with ShellUtility for external commands."
 const DEFAULT_SHELL_DESCRIPTION =
-  "Use to use the default POSIX shell for the shell tool via opencode service unset shell."
+  "Restore the default POSIX shell for the shell tool via opencode service unset shell."
 
 export const Plugin = define({
   id: "opencode.skill",
