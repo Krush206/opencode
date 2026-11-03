@@ -59,7 +59,6 @@ The following procedure prints all available classes and their methods:
 
 ```smalltalk
 Smalltalk allClassesDo: [ :i | 
-  'Class: ' displayNl. 
   i displayNl. 
   Character tab display. 
   '<Class methods>' displayNl. 
