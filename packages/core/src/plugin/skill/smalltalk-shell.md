@@ -53,6 +53,27 @@ Proceed only if the output is the path to `gst`. If the tool still behaves like 
 
 ## Quick reference
 
+### Enumerating all classes and methods
+
+The following procedure prints all available classes and their methods:
+
+```smalltalk
+Smalltalk allClassesDo: [ :i | 
+  'Class: ' displayNl. 
+  i displayNl. 
+  Character tab display. 
+  '<Class methods>' displayNl. 
+  i class selectors do: [ :m | Character tab display. m displayNl. ]. 
+  Character tab display. 
+  '<Instance methods>' displayNl. 
+  i selectors do: [ :m | Character tab display. m displayNl. ]
+].
+```
+
+This iterates over every class and method in the system. Use with caution as it produces extensive output.
+
+### Basic operations
+
 ```smalltalk
 'Hello' displayNl.
 (3 + 4) printNl.
