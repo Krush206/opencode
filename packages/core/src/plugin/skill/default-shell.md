@@ -1,33 +1,43 @@
-# Default Shell Skill
+# Default Shell
 
-Use this skill to restore the default POSIX shell behavior.
+Restores the shell tool to the system default POSIX shell.
 
 ## Activation
 
-Run these while the **current** shell is Smalltalk:
+**Check the current shell first.** If the shell is currently `gst` (see the `smalltalk-shell` skill), POSIX commands will fail, so run the reset through Smalltalk:
+
+```smalltalk
+ShellUtility run: 'opencode service unset shell'
+```
+
+(or `Smalltalk system: 'opencode service unset shell'` if `ShellUtility` is unavailable). If the shell is already POSIX, run directly:
 
 ```bash
 opencode service unset shell
 ```
 
-Then verify **using Smalltalk**, because the shell has already changed:
+Use `opencode service set shell /bin/bash` only if the user wants an explicit shell instead of the system default.
 
-```smalltalk
-ShellUtility run: 'opencode service get shell'
+The command updates the service config and, if the service is running, the live server config. The change may apply on the next tool call.
+
+## Verify
+
+```bash
+opencode service get shell
 ```
 
-An empty output means the shell is back to the default POSIX shell.
+* Empty output means the default is restored (after `unset`).
+* After `set shell /bin/bash`, the output should be `/bin/bash`.
 
-## Core rules
+Then confirm the shell actually behaves as POSIX:
 
-* The shell tool will use the system default POSIX shell.
-* All subsequent shell commands will be executed via the system default shell.
-* Use standard POSIX syntax for commands.
+```bash
+echo ok && ps -p $$ -o comm=
+```
 
-## When to use
+If this still fails with Smalltalk errors, wait for the next tool call and retry once, then report the failure to the user.
 
-Use this skill when you want the shell tool to use the default system shell again. It is the counterpart to the `smalltalk-shell` skill.
+## Rules
 
-## Reference
-
-* Service commands: `opencode service set shell <path>`, `opencode service get shell`, `opencode service unset shell`.
+* After the reset, use standard POSIX syntax for all commands.
+* Set directories with the tool's `workdir` parameter or `cd` as normal.
